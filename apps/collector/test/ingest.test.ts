@@ -36,10 +36,10 @@ test("accepts http/protobuf, plain and gzipped", async () => {
     });
     expect(res.status).toBe(200);
   }
-  const live: any[] = await (await fetch(`${collector.url}/api/live`)).json();
-  const mine = live.filter((e) => e.sessionId === "pb-1");
-  expect(mine).toHaveLength(2);
-  expect(mine[0]).toMatchObject({ kind: "tool", ms: 812 });
+  // Runs first on a fresh store, so the backlog holds only these two records.
+  const live = await (await fetch(`${collector.url}/api/live`)).json();
+  expect(live).toHaveLength(2);
+  expect(live[0]).toMatchObject({ kind: "tool", ms: 812, sessionId: "pb-1" });
 });
 
 test("ingested logs are pushed to WebSocket clients and kept in the live backlog", async () => {
