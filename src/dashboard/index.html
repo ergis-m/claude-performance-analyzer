@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Claude Code Speed</title>
+    <link rel="stylesheet" href="./style.css" />
+  </head>
+  <body>
+    <header>
+      <h1>Claude Code speed</h1>
+      <nav id="window" role="tablist">
+        <button data-min="15">15m</button>
+        <button data-min="60">1h</button>
+        <button data-min="1440">24h</button>
+        <button data-min="10080">7d</button>
+      </nav>
+      <span id="updated" class="muted"></span>
+    </header>
+    <main id="app"><p class="muted">Loading...</p></main>
+    <div id="tip" role="tooltip"></div>
+    <script type="module" src="./app.ts"></script>
+  </body>
+</html>

@@ -1,0 +1,99 @@
+:root {
+  color-scheme: light;
+  --page: #f9f9f7;
+  --surface: #fcfcfb;
+  --ink: #0b0b0b;
+  --ink-2: #52514e;
+  --muted: #898781;
+  --grid: #e1e0d9;
+  --axis: #c3c2b7;
+  --border: rgba(11, 11, 11, 0.1);
+  --api: #2a78d6;
+  --api-soft: #86b6ef;
+  --tools: #eb6834;
+  --hooks: #1baf7a;
+  --warn: #fab219;
+  --critical: #d03b3b;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --page: #0d0d0d;
+    --surface: #1a1a19;
+    --ink: #ffffff;
+    --ink-2: #c3c2b7;
+    --grid: #2c2c2a;
+    --axis: #383835;
+    --border: rgba(255, 255, 255, 0.1);
+    --api: #3987e5;
+    --api-soft: #86b6ef;
+    --tools: #d95926;
+    --hooks: #199e70;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --page: #0d0d0d;
+  --surface: #1a1a19;
+  --ink: #ffffff;
+  --ink-2: #c3c2b7;
+  --grid: #2c2c2a;
+  --axis: #383835;
+  --border: rgba(255, 255, 255, 0.1);
+  --api: #3987e5;
+  --api-soft: #86b6ef;
+  --tools: #d95926;
+  --hooks: #199e70;
+}
+
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  padding: 14px 16px 24px;
+  background: var(--page);
+  color: var(--ink);
+  font: 13px/1.4 system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+header { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+h1 { font-size: 15px; margin: 0; font-weight: 600; }
+h2 { font-size: 12px; margin: 0 0 8px; font-weight: 600; color: var(--ink-2); text-transform: uppercase; letter-spacing: 0.04em; }
+.muted { color: var(--muted); }
+#updated { margin-left: auto; font-size: 11px; }
+nav { display: flex; border: 1px solid var(--border); border-radius: 7px; overflow: hidden; }
+nav button {
+  border: 0; background: transparent; color: var(--ink-2); padding: 3px 10px; font: inherit; cursor: pointer;
+}
+nav button.on { background: var(--surface); color: var(--ink); font-weight: 600; box-shadow: inset 0 0 0 1px var(--border); }
+
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; margin-bottom: 12px; }
+.grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(330px, 1fr)); gap: 12px; }
+.grid2 > .card { margin-bottom: 0; }
+.grid2 + .card, .grid2 + .grid2 { margin-top: 12px; }
+
+.kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(118px, 1fr)); gap: 8px; margin-bottom: 12px; }
+.kpi { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; }
+.kpi .label { font-size: 11px; color: var(--ink-2); }
+.kpi .value { font-size: 22px; font-weight: 600; margin-top: 2px; }
+.kpi .sub { font-size: 11px; color: var(--muted); }
+.kpi.flag .label::before { content: "\26A0  "; color: var(--warn); }
+
+svg text { fill: var(--muted); font-size: 11px; font-variant-numeric: tabular-nums; }
+svg text.ink { fill: var(--ink-2); }
+.legend { display: flex; gap: 14px; font-size: 11px; color: var(--ink-2); margin-bottom: 6px; flex-wrap: wrap; }
+.legend i { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 5px; vertical-align: -1px; }
+
+table { width: 100%; border-collapse: collapse; font-size: 12px; }
+th { text-align: left; font-weight: 500; color: var(--muted); padding: 3px 6px 5px 0; border-bottom: 1px solid var(--grid); }
+td { padding: 4px 6px 4px 0; border-bottom: 1px solid var(--grid); font-variant-numeric: tabular-nums; }
+td.name { max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+td.num, th.num { text-align: right; }
+.empty { color: var(--muted); font-size: 12px; }
+code, pre { font: 11.5px ui-monospace, SFMono-Regular, Menlo, monospace; }
+pre { background: var(--page); border: 1px solid var(--border); border-radius: 8px; padding: 10px; overflow-x: auto; }
+
+#tip {
+  position: fixed; pointer-events: none; display: none; z-index: 10;
+  background: var(--surface); color: var(--ink); border: 1px solid var(--border); border-radius: 8px;
+  padding: 6px 9px; font-size: 12px; box-shadow: 0 4px 16px rgba(0, 0, 0, 0.18); white-space: pre; max-width: 360px;
+}
+[data-tip]:hover { opacity: 0.85; }
