@@ -2,8 +2,16 @@
 
 macOS menu bar widget for Claude Code telemetry. Shows where turn time goes: model latency, tools, hooks, skills, subagents, MCP startup.
 
-- `src/server.ts`: Bun OTLP receiver (http/json or http/protobuf, gzip ok) on `127.0.0.1:4318`, stores to `~/.claude-telemetry/telemetry.sqlite` (14 day retention), serves the dashboard and `/api/summary`, `/api/status`.
-- `menubar/`: Swift status bar app. Label is API p50 latency over the last 15 min, orange when hooks are slow. Click opens the dashboard in a popover, right click for menu.
+## Layout
+
+Bun workspaces. Each package has its own `src/` and `test/`.
+
+- `apps/collector`: Bun OTLP receiver (http/json or http/protobuf, gzip ok) on `127.0.0.1:4318`, stores to `~/.claude-telemetry/telemetry.sqlite` (14 day retention), serves the dashboard and `/api/summary`, `/api/status`.
+- `apps/dashboard`: browser UI, bundled by the collector through its HTML import.
+- `apps/menubar`: Swift status bar app. Label is API p50 latency over the last 15 min, orange when hooks are slow. Click opens the dashboard in a popover, right click for menu.
+- `packages/otlp`: OTLP http/json and http/protobuf decoding into rows.
+- `packages/analytics`: summaries, percentiles, turn timelines. Shared by the collector and the dashboard.
+- `packages/claude-settings`: adds the telemetry variables to Claude Code's `settings.json`.
 
 ## Run
 
@@ -11,6 +19,8 @@ macOS menu bar widget for Claude Code telemetry. Shows where turn time goes: mod
 bun install
 bun run start      # collector + dashboard
 bun run app        # build and open the menu bar app
+bun test           # all packages
+bun run typecheck
 ```
 
 Point Claude Code at the collector. The dashboard has a button that adds any missing variables to the `env` block of `~/.claude/settings.json` (existing values are kept, a backup is written next to the file). Or set them yourself:
@@ -36,4 +46,4 @@ OTEL_TRACES_EXPORTER=otlp
 
 ## Third-party files
 
-`proto/` holds the OTLP `.proto` definitions from [open-telemetry/opentelemetry-proto](https://github.com/open-telemetry/opentelemetry-proto) v1.11.1, Apache 2.0 (see `proto/LICENSE`).
+`packages/otlp/proto/` holds the OTLP `.proto` definitions from [open-telemetry/opentelemetry-proto](https://github.com/open-telemetry/opentelemetry-proto) v1.11.1, Apache 2.0 (see `packages/otlp/proto/LICENSE`).

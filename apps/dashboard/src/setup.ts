@@ -1,5 +1,5 @@
 // Card that offers to add the telemetry env vars to Claude Code settings.
-import type { EnvPlan } from "../settings";
+import type { EnvPlan } from "@cpa/claude-settings";
 
 const esc = (s: unknown) =>
   String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!);

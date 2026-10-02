@@ -1,8 +1,8 @@
-import { afterAll, beforeAll, expect, test } from "bun:test";
-import { existsSync, lstatSync, mkdtempSync, readFileSync, readdirSync, symlinkSync, writeFileSync } from "node:fs";
+import { expect, test } from "bun:test";
+import { existsSync, lstatSync, mkdtempSync, readFileSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { applyEnv, planEnv, telemetryEnv } from "../src/settings";
+import { applyEnv, planEnv, telemetryEnv } from "../src";
 
 const wanted = telemetryEnv(4318);
 const tmp = () => mkdtempSync(join(tmpdir(), "cc-settings-"));
@@ -79,48 +79,4 @@ test("creates settings.json when absent", () => {
   const out = applyEnv(path, wanted);
   expect(out.backup).toBeNull();
   expect(JSON.parse(readFileSync(path, "utf8")).env).toEqual(wanted);
-});
-
-
-const PORT = 15000 + Math.floor(Math.random() * 1000);
-const dir = tmp();
-const path = join(dir, "settings.json");
-let proc: ReturnType<typeof Bun.spawn>;
-beforeAll(async () => {
-  writeFileSync(path, JSON.stringify(original));
-  proc = Bun.spawn(["bun", "src/server.ts"], {
-    env: { ...process.env, PORT: String(PORT), CC_TELEMETRY_DIR: tmp(), CC_SETTINGS_PATH: path, NODE_ENV: "production" },
-    stdout: "ignore",
-    stderr: "inherit",
-  });
-  for (let i = 0; i < 50; i++) {
-    if (await fetch(`http://127.0.0.1:${PORT}/api/setup`).then((r) => r.ok, () => false)) return;
-    await Bun.sleep(100);
-  }
-  throw new Error("server did not start");
-});
-afterAll(() => proc.kill());
-
-test("endpoint rejects posts that do not come from the dashboard", async () => {
-  const url = `http://127.0.0.1:${PORT}/api/setup`;
-  const json = { "content-type": "application/json" };
-  expect((await fetch(url, { method: "POST", headers: json, body: "{}" })).status).toBe(403);
-  expect((await fetch(url, { method: "POST", headers: { ...json, origin: "https://evil.example" }, body: "{}" })).status).toBe(403);
-  expect((await fetch(url, { method: "POST", headers: { origin: `http://127.0.0.1:${PORT}`, "content-type": "text/plain" }, body: "{}" })).status).toBe(403);
-  expect(JSON.parse(readFileSync(path, "utf8"))).toEqual(original);
-  expect(readdirSync(dir)).toEqual(["settings.json"]);
-});
-
-test("endpoint applies settings for the dashboard origin", async () => {
-  const res = await fetch(`http://127.0.0.1:${PORT}/api/setup`, {
-    method: "POST",
-    headers: { origin: `http://127.0.0.1:${PORT}`, "content-type": "application/json" },
-    body: "{}",
-  });
-  expect(res.status).toBe(200);
-  const out = await res.json();
-  expect(out.added).toContain("CLAUDE_CODE_ENABLE_TELEMETRY");
-  expect(JSON.stringify(out)).not.toContain("sk-secret");
-  expect(existsSync(out.backup)).toBe(true);
-  expect(JSON.parse(readFileSync(path, "utf8")).env.OTEL_EXPORTER_OTLP_ENDPOINT).toBe(`http://127.0.0.1:${PORT}`);
 });

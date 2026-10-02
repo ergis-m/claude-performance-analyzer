@@ -1,0 +1,7 @@
+{
+  "name": "@cpa/analytics",
+  "type": "module",
+  "private": true,
+  "exports": { ".": "./src/index.ts" },
+  "dependencies": { "@cpa/otlp": "workspace:*" }
+}

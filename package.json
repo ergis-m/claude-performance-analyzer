@@ -2,21 +2,21 @@
   "name": "claude-performance-analyzer",
   "type": "module",
   "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
   "scripts": {
-    "start": "NODE_ENV=production bun src/server.ts",
-    "dev": "bun src/server.ts",
+    "start": "bun run --filter @cpa/collector start",
+    "dev": "bun run --filter @cpa/collector dev",
+    "app": "bun run --filter @cpa/menubar start",
     "test": "bun test",
-    "app": "./menubar/build.sh && open menubar/build/ClaudeTelemetry.app"
+    "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
     "@types/bun": "latest"
   },
   "peerDependencies": {
     "typescript": "^7"
-  },
-  "dependencies": {
-    "echarts": "^6.1.0",
-    "jsonc-parser": "^3.3.1",
-    "protobufjs": "^8.8.0"
   }
 }

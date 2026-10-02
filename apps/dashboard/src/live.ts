@@ -1,6 +1,6 @@
 // Live activity: WebSocket feed of events as Claude Code exports them.
-import type { LiveEvent } from "../analytics";
-import { fmtMs } from "../analytics";
+import type { LiveEvent } from "@cpa/analytics";
+import { fmtMs } from "@cpa/analytics";
 
 const FEED_MAX = 40;
 const STALE_HOOK_MS = 120_000;

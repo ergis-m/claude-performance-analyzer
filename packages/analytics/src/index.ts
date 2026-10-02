@@ -1,5 +1,5 @@
 // Turns raw telemetry rows into the dashboard summary.
-import type { Attrs, EventRow, SpanRow } from "./otlp";
+import type { Attrs, EventRow, SpanRow } from "@cpa/otlp";
 
 export interface LatencyStats {
   name: string;
