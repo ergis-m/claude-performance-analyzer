@@ -37,6 +37,7 @@ struct Summary: Decodable {
         let t: Double
         let p50: Double?
         let p95: Double?
+        let count: Int
     }
     struct Series: Decodable {
         let points: [Point]
@@ -76,16 +77,18 @@ func date(_ ms: Double) -> Date {
 final class Telemetry {
     var status: Status?
     var summary: Summary?
+    var summaryError: String?
     var live: [LiveEvent] = []
     var updatedAt: Date?
     var panelOpen = false {
-        didSet { if panelOpen { Task { await refresh() } } }
+        didSet { if panelOpen != oldValue { restartPanelPolling() } }
     }
     var minutes = UserDefaults.standard.object(forKey: "window") as? Int ?? 60 {
         didSet {
             UserDefaults.standard.set(minutes, forKey: "window")
             summary = nil
-            Task { await refresh() }
+            summaryError = nil
+            restartPanelPolling()
         }
     }
 
@@ -95,31 +98,52 @@ final class Telemetry {
         config.timeoutIntervalForResource = 5.0
         return URLSession(configuration: config)
     }()
+    @ObservationIgnored private var panelTask: Task<Void, Never>?
 
     init() {
+        // Status runs on its own loop so slow summary requests never delay the label.
         Task {
             while true {
-                await refresh()
+                status = try? await get("api/status")
                 try? await Task.sleep(for: .seconds(2))
             }
         }
     }
 
-    func refresh() async {
-        status = try? await get("api/status")
-        guard status != nil, panelOpen else { return }
-        let window = minutes
-        let newSummary: Summary? = try? await get("api/summary?minutes=\(window)")
-        let newLive: [LiveEvent]? = try? await get("api/live")
-        // A window switch mid-request would otherwise show the old window's numbers.
-        guard window == minutes, let newSummary else { return }
-        summary = newSummary
-        live = newLive ?? live
-        updatedAt = .now
+    // One panel loop at a time: closing the panel or switching window cancels the old one,
+    // so a late response can never overwrite newer data.
+    private func restartPanelPolling() {
+        panelTask?.cancel()
+        panelTask = nil
+        guard panelOpen else { return }
+        panelTask = Task {
+            while !Task.isCancelled {
+                await refreshPanel()
+                try? await Task.sleep(for: .seconds(2))
+            }
+        }
+    }
+
+    private func refreshPanel() async {
+        do {
+            let newSummary: Summary = try await get("api/summary?minutes=\(minutes)")
+            let newLive: [LiveEvent]? = try? await get("api/live")
+            guard !Task.isCancelled else { return }
+            summary = newSummary
+            summaryError = nil
+            live = newLive ?? live
+            updatedAt = .now
+        } catch {
+            guard !Task.isCancelled else { return }
+            summaryError = error.localizedDescription
+        }
     }
 
     private func get<T: Decodable>(_ path: String) async throws -> T {
-        let (data, _) = try await session.data(from: URL(string: path, relativeTo: collectorURL)!)
+        let (data, response) = try await session.data(from: URL(string: path, relativeTo: collectorURL)!)
+        if let http = response as? HTTPURLResponse, http.statusCode != 200 {
+            throw URLError(.badServerResponse)
+        }
         return try JSONDecoder().decode(T.self, from: data)
     }
 }
@@ -167,6 +191,10 @@ struct PanelView: View {
                     Text(stateText)
                     if let updatedAt = model.updatedAt, model.status != nil {
                         Text("· updated \(Text(updatedAt, style: .relative)) ago")
+                    }
+                    // Keep the last numbers on a failed refresh, but say they are stale.
+                    if model.summaryError != nil, model.summary != nil, model.status != nil {
+                        Text("· refresh failed").foregroundStyle(.orange)
                     }
                 }
                 .font(.caption)
@@ -220,6 +248,12 @@ struct PanelView: View {
             } else {
                 SummaryView(summary: s, live: model.live)
             }
+        } else if let error = model.summaryError {
+            EmptyState(
+                title: "Couldn't load summary",
+                symbol: "exclamationmark.triangle",
+                message: "\(error) Retrying every 2s."
+            )
         } else {
             ProgressView().controlSize(.small).frame(maxWidth: .infinity, minHeight: 80)
         }
@@ -337,6 +371,34 @@ struct Swatch: View {
     }
 }
 
+// One plotted value. `segment` changes at every empty bucket so the line breaks there,
+// like the dashboard's connectNulls: false.
+struct LatencySample: Identifiable {
+    let id: Int
+    let time: Date
+    let ms: Double
+    let series: String
+    let segment: String
+
+    static func from(_ points: [Summary.Point]) -> [LatencySample] {
+        var samples: [LatencySample] = []
+        for (series, value) in [("p50", \Summary.Point.p50), ("p95", \Summary.Point.p95)] {
+            var segment = 0
+            var inGap = false
+            for p in points {
+                guard let ms = p[keyPath: value] else {
+                    if !inGap { segment += 1 }
+                    inGap = true
+                    continue
+                }
+                inGap = false
+                samples.append(LatencySample(id: samples.count, time: date(p.t), ms: ms, series: series, segment: "\(series)-\(segment)"))
+            }
+        }
+        return samples
+    }
+}
+
 struct LatencyChart: View {
     let points: [Summary.Point]
 
@@ -348,36 +410,45 @@ struct LatencyChart: View {
                 Swatch(color: .blue, text: "p50")
                 Swatch(color: .blue.opacity(0.35), text: "p95")
             }
-            Chart {
-                ForEach(Array(points.enumerated()), id: \.offset) { _, p in
-                    if let v = p.p50 {
-                        LineMark(x: .value("Time", date(p.t)), y: .value("Latency", v))
-                            .foregroundStyle(by: .value("Series", "p50"))
-                    }
-                    if let v = p.p95 {
-                        LineMark(x: .value("Time", date(p.t)), y: .value("Latency", v))
-                            .foregroundStyle(by: .value("Series", "p95"))
-                    }
-                }
-                .interpolationMethod(.monotone)
+            if points.contains(where: { $0.count > 0 }) {
+                chart
+            } else {
+                Text("No API requests in this window.")
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+                    .frame(maxWidth: .infinity, minHeight: 90)
             }
-            // Span the whole window, not just the buckets that have requests.
-            .chartXScale(domain: date(points.first?.t ?? 0)...date(points.last?.t ?? 0))
-            .chartForegroundStyleScale(["p50": Color.blue, "p95": Color.blue.opacity(0.35)])
-            .chartLegend(.hidden)
-            .chartYAxis {
-                AxisMarks(values: .automatic(desiredCount: 3)) { v in
-                    AxisGridLine()
-                    AxisValueLabel { if let ms = v.as(Double.self) { Text(fmtMs(ms)) } }
-                }
-            }
-            .chartXAxis {
-                AxisMarks(values: .automatic(desiredCount: 3)) { _ in
-                    AxisValueLabel(format: .dateTime.hour().minute(), collisionResolution: .greedy(minimumSpacing: 6))
-                }
-            }
-            .frame(height: 90)
         }
+    }
+
+    private var chart: some View {
+        Chart(LatencySample.from(points)) { s in
+            LineMark(x: .value("Time", s.time), y: .value("Latency", s.ms), series: .value("Segment", s.segment))
+                .foregroundStyle(by: .value("Series", s.series))
+                .lineStyle(s.series == "p95" ? StrokeStyle(lineWidth: 2, dash: [4, 3]) : StrokeStyle(lineWidth: 2))
+                .interpolationMethod(.monotone)
+            // Points keep a lone bucket visible, since a one-point line draws nothing.
+            PointMark(x: .value("Time", s.time), y: .value("Latency", s.ms))
+                .foregroundStyle(by: .value("Series", s.series))
+                .symbolSize(10)
+        }
+        // Span the whole window, not just the buckets that have requests.
+        .chartXScale(domain: date(points.first?.t ?? 0)...date(points.last?.t ?? 0))
+        .chartYScale(domain: .automatic(includesZero: true))
+        .chartForegroundStyleScale(["p50": Color.blue, "p95": Color.blue.opacity(0.35)])
+        .chartLegend(.hidden)
+        .chartYAxis {
+            AxisMarks(values: .automatic(desiredCount: 3)) { v in
+                AxisGridLine()
+                AxisValueLabel { if let ms = v.as(Double.self) { Text(fmtMs(ms)) } }
+            }
+        }
+        .chartXAxis {
+            AxisMarks(values: .automatic(desiredCount: 3)) { _ in
+                AxisValueLabel(format: .dateTime.hour().minute(), collisionResolution: .greedy(minimumSpacing: 6))
+            }
+        }
+        .frame(height: 90)
     }
 }
 
