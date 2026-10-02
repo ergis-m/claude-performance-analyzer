@@ -8,7 +8,7 @@ Bun workspaces. Each package has its own `src/` and `test/`.
 
 - `apps/collector`: Bun OTLP receiver (http/json or http/protobuf, gzip ok) on `127.0.0.1:4318`, stores to `~/.claude-telemetry/telemetry.sqlite` (14 day retention), serves the dashboard and `/api/summary`, `/api/status`.
 - `apps/dashboard`: browser UI, bundled by the collector through its HTML import.
-- `apps/menubar`: Swift status bar app. Label is API p50 latency over the last 15 min, orange when hooks are slow. Click opens the dashboard in a popover, right click for menu.
+- `apps/menubar`: SwiftUI menu bar app. Label is API p50 latency over the last 15 min, with a warning icon when hooks are slow. Click opens a native summary panel (latency chart, turn time split, slowest hooks and tools, live feed); "Open Dashboard" opens the full web dashboard.
 - `packages/otlp`: OTLP http/json and http/protobuf decoding into rows.
 - `packages/analytics`: summaries, percentiles, turn timelines. Shared by the collector and the dashboard.
 - `packages/claude-settings`: adds the telemetry variables to Claude Code's `settings.json`.

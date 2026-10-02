@@ -16,7 +16,7 @@ MIN_MACOS="$(/usr/libexec/PlistBuddy -c 'Print :LSMinimumSystemVersion' "$SCRIPT
 for arch in arm64 x86_64; do
     swiftc -O -parse-as-library \
         -target "$arch-apple-macos$MIN_MACOS" \
-        -framework AppKit -framework WebKit \
+        -framework SwiftUI -framework Charts \
         "$SCRIPT_DIR/ClaudeTelemetry.swift" \
         -o "$BUILD_DIR/ClaudeTelemetry-$arch"
 done

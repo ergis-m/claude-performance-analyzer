@@ -87,8 +87,6 @@ body {
     var(--page);
   background-attachment: fixed;
 }
-/* Inside the menu bar popover the system glass is the background. */
-:root[data-host="popover"] body { background: transparent; }
 
 .card, .kpi, nav, .running, #setup .key {
   background: var(--glass);
