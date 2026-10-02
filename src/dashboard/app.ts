@@ -183,6 +183,7 @@ function breakdownOption(pal: Palette, b: Summary["breakdown"]): Option {
     tooltip: {
       trigger: "item",
       backgroundColor: pal.surface,
+      extraCssText: TIP_CSS,
       borderColor: pal.border,
       textStyle: { color: pal.ink, fontSize: 12, fontFamily: FONT },
       formatter: (p: any) => tooltipHtml(`${PARTS[p.seriesIndex as number]![2]}: ${fmtMs(vals[p.seriesIndex as number]!)} (${pct(vals[p.seriesIndex as number]! / total)})`),
@@ -237,6 +238,7 @@ function latencyOption(pal: Palette, pts: Summary["apiSeries"]["points"]): Optio
       trigger: "axis",
       axisPointer: { type: "cross" },
       backgroundColor: pal.surface,
+      extraCssText: TIP_CSS,
       borderColor: pal.border,
       textStyle: { color: pal.ink, fontSize: 12, fontFamily: FONT },
       formatter: (params: any[]) => {
@@ -304,6 +306,7 @@ function statBarOption(pal: Palette, rows: LatencyStats[], colorKey: "hooks" | "
     tooltip: {
       trigger: "item",
       backgroundColor: pal.surface,
+      extraCssText: TIP_CSS,
       borderColor: pal.border,
       textStyle: { color: pal.ink, fontSize: 12, fontFamily: FONT },
       formatter: (p: any) => tooltipHtml(p.data.tipText as string),
@@ -349,6 +352,7 @@ function promptsOption(pal: Palette, prompts: PromptBreakdown[]): Option {
     tooltip: {
       trigger: "item",
       backgroundColor: pal.surface,
+      extraCssText: TIP_CSS,
       borderColor: pal.border,
       textStyle: { color: pal.ink, fontSize: 12, fontFamily: FONT },
       formatter: (p: any) => tooltipHtml(p.data.tipText as string),
@@ -384,6 +388,9 @@ function kindColor(pal: Palette, kind: TurnSpan["kind"]): string {
   if (kind === "hook") return pal.hooks;
   return pal.muted;
 }
+
+// Frosted tooltip to match the glass cards.
+const TIP_CSS = "border-radius:12px;-webkit-backdrop-filter:blur(20px);backdrop-filter:blur(20px);box-shadow:0 10px 30px rgba(0,0,0,.18);";
 
 const WF_ROW_H = 14;
 const WF_VISIBLE_ROWS = 15;
@@ -425,6 +432,7 @@ function waterfallOption(pal: Palette, turn: TurnTimeline): Option {
     tooltip: {
       trigger: "item",
       backgroundColor: pal.surface,
+      extraCssText: TIP_CSS,
       borderColor: pal.border,
       textStyle: { color: pal.ink, fontSize: 12, fontFamily: FONT },
       formatter: (p: any) => {

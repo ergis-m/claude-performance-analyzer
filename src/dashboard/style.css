@@ -1,13 +1,22 @@
 :root {
   color-scheme: light;
-  --page: #f9f9f7;
-  --surface: #fcfcfb;
+  --page: #eef1f6;
+  --page-tint-1: rgba(42, 120, 214, 0.18);
+  --page-tint-2: rgba(235, 104, 52, 0.12);
+  --page-tint-3: rgba(27, 175, 122, 0.12);
+  --surface: rgba(252, 252, 251, 0.94);
   --ink: #0b0b0b;
   --ink-2: #52514e;
-  --muted: #898781;
-  --grid: #e1e0d9;
-  --axis: #c3c2b7;
-  --border: rgba(11, 11, 11, 0.1);
+  --muted: #7d7b76;
+  --grid: rgba(0, 0, 0, 0.07);
+  --axis: rgba(0, 0, 0, 0.18);
+  --border: rgba(0, 0, 0, 0.08);
+  /* Liquid Glass: translucent fill, bright rim, soft depth. */
+  --glass: rgba(255, 255, 255, 0.52);
+  --glass-strong: rgba(255, 255, 255, 0.85);
+  --glass-rim: rgba(255, 255, 255, 0.75);
+  --glass-hi: inset 0 1px 0 rgba(255, 255, 255, 0.9), inset 0 -1px 0 rgba(0, 0, 0, 0.03);
+  --glass-shadow: 0 1px 2px rgba(0, 0, 0, 0.04), 0 8px 24px rgba(30, 40, 60, 0.08);
   --api: #2a78d6;
   --api-soft: #86b6ef;
   --tools: #eb6834;
@@ -18,13 +27,21 @@
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
     color-scheme: dark;
-    --page: #0d0d0d;
-    --surface: #1a1a19;
+    --page: #0b0d12;
+    --page-tint-1: rgba(57, 135, 229, 0.22);
+    --page-tint-2: rgba(217, 89, 38, 0.12);
+    --page-tint-3: rgba(25, 158, 112, 0.12);
+    --surface: rgba(30, 30, 32, 0.94);
     --ink: #ffffff;
-    --ink-2: #c3c2b7;
-    --grid: #2c2c2a;
-    --axis: #383835;
+    --ink-2: #c9c8c2;
+    --grid: rgba(255, 255, 255, 0.07);
+    --axis: rgba(255, 255, 255, 0.16);
     --border: rgba(255, 255, 255, 0.1);
+    --glass: rgba(255, 255, 255, 0.06);
+    --glass-strong: rgba(255, 255, 255, 0.16);
+    --glass-rim: rgba(255, 255, 255, 0.14);
+    --glass-hi: inset 0 1px 0 rgba(255, 255, 255, 0.12), inset 0 -1px 0 rgba(0, 0, 0, 0.2);
+    --glass-shadow: 0 1px 2px rgba(0, 0, 0, 0.2), 0 10px 30px rgba(0, 0, 0, 0.3);
     --api: #3987e5;
     --api-soft: #86b6ef;
     --tools: #d95926;
@@ -33,13 +50,21 @@
 }
 :root[data-theme="dark"] {
   color-scheme: dark;
-  --page: #0d0d0d;
-  --surface: #1a1a19;
+  --page: #0b0d12;
+  --page-tint-1: rgba(57, 135, 229, 0.22);
+  --page-tint-2: rgba(217, 89, 38, 0.12);
+  --page-tint-3: rgba(25, 158, 112, 0.12);
+  --surface: rgba(30, 30, 32, 0.94);
   --ink: #ffffff;
-  --ink-2: #c3c2b7;
-  --grid: #2c2c2a;
-  --axis: #383835;
+  --ink-2: #c9c8c2;
+  --grid: rgba(255, 255, 255, 0.07);
+  --axis: rgba(255, 255, 255, 0.16);
   --border: rgba(255, 255, 255, 0.1);
+  --glass: rgba(255, 255, 255, 0.06);
+  --glass-strong: rgba(255, 255, 255, 0.16);
+  --glass-rim: rgba(255, 255, 255, 0.14);
+  --glass-hi: inset 0 1px 0 rgba(255, 255, 255, 0.12), inset 0 -1px 0 rgba(0, 0, 0, 0.2);
+  --glass-shadow: 0 1px 2px rgba(0, 0, 0, 0.2), 0 10px 30px rgba(0, 0, 0, 0.3);
   --api: #3987e5;
   --api-soft: #86b6ef;
   --tools: #d95926;
@@ -50,30 +75,50 @@
 body {
   margin: 0;
   padding: 14px 16px 24px;
-  background: var(--page);
+  min-height: 100vh;
   color: var(--ink);
   font: 13px/1.4 system-ui, -apple-system, "Segoe UI", sans-serif;
+  -webkit-font-smoothing: antialiased;
+  /* Soft color field so the glass has something to refract in a browser tab. */
+  background:
+    radial-gradient(60% 50% at 10% 0%, var(--page-tint-1), transparent 70%),
+    radial-gradient(50% 40% at 95% 20%, var(--page-tint-2), transparent 70%),
+    radial-gradient(60% 50% at 50% 100%, var(--page-tint-3), transparent 70%),
+    var(--page);
+  background-attachment: fixed;
+}
+/* Inside the menu bar popover the system glass is the background. */
+:root[data-host="popover"] body { background: transparent; }
+
+.card, .kpi, nav, .running, #setup .key {
+  background: var(--glass);
+  border: 1px solid var(--glass-rim);
+  box-shadow: var(--glass-hi), var(--glass-shadow);
+  -webkit-backdrop-filter: blur(28px) saturate(180%);
+  backdrop-filter: blur(28px) saturate(180%);
 }
 header { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
-h1 { font-size: 15px; margin: 0; font-weight: 600; }
-h2 { font-size: 12px; margin: 0 0 8px; font-weight: 600; color: var(--ink-2); text-transform: uppercase; letter-spacing: 0.04em; }
+h1 { font-size: 17px; margin: 0; font-weight: 700; letter-spacing: -0.01em; }
+h2 { font-size: 13px; margin: 0 0 10px; font-weight: 600; color: var(--ink); letter-spacing: -0.005em; }
 .muted { color: var(--muted); }
 #updated { margin-left: auto; font-size: 11px; }
-nav { display: flex; border: 1px solid var(--border); border-radius: 7px; overflow: hidden; }
+nav { display: flex; gap: 2px; padding: 2px; border-radius: 999px; }
 nav button {
-  border: 0; background: transparent; color: var(--ink-2); padding: 3px 10px; font: inherit; cursor: pointer;
+  border: 0; background: transparent; color: var(--ink-2); padding: 3px 12px; border-radius: 999px; font: inherit; cursor: pointer;
+  transition: background 0.2s, color 0.2s;
 }
-nav button.on { background: var(--surface); color: var(--ink); font-weight: 600; box-shadow: inset 0 0 0 1px var(--border); }
+nav button:hover { color: var(--ink); }
+nav button.on { background: var(--glass-strong); color: var(--ink); font-weight: 600; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.4); }
 
-.card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; margin-bottom: 12px; }
+.card { border-radius: 18px; padding: 14px 16px; margin-bottom: 12px; }
 .grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(330px, 1fr)); gap: 12px; }
 .grid2 > .card { margin-bottom: 0; }
 .grid2 + .card, .grid2 + .grid2 { margin-top: 12px; }
 
 .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(118px, 1fr)); gap: 8px; margin-bottom: 12px; }
-.kpi { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; }
+.kpi { border-radius: 16px; padding: 10px 14px; }
 .kpi .label { font-size: 11px; color: var(--ink-2); }
-.kpi .value { font-size: 22px; font-weight: 600; margin-top: 2px; }
+.kpi .value { font-size: 24px; font-weight: 700; margin-top: 2px; letter-spacing: -0.02em; }
 .kpi .sub { font-size: 11px; color: var(--muted); }
 .kpi.flag .label::before { content: "\26A0  "; color: var(--warn); }
 
@@ -96,8 +141,9 @@ pre { background: var(--page); border: 1px solid var(--border); border-radius: 8
 
 #tip {
   position: fixed; pointer-events: none; display: none; z-index: 10;
-  background: var(--surface); color: var(--ink); border: 1px solid var(--border); border-radius: 8px;
-  padding: 6px 9px; font-size: 12px; box-shadow: 0 4px 16px rgba(0, 0, 0, 0.18); white-space: pre; max-width: 360px;
+  background: var(--surface); color: var(--ink); border: 1px solid var(--glass-rim); border-radius: 12px;
+  padding: 7px 10px; font-size: 12px; box-shadow: var(--glass-shadow); white-space: pre; max-width: 360px;
+  -webkit-backdrop-filter: blur(20px); backdrop-filter: blur(20px);
 }
 [data-tip]:hover { opacity: 0.85; }
 
@@ -106,7 +152,7 @@ pre { background: var(--page); border: 1px solid var(--border); border-radius: 8
 .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); }
 .dot.on { background: var(--hooks); animation: pulse 1.6s ease-in-out infinite; }
 @keyframes pulse { 50% { opacity: 0.35; } }
-.running { background: var(--page); border: 1px solid var(--border); border-radius: 6px; padding: 1px 7px; color: var(--ink); }
+.running { border-radius: 999px; padding: 1px 9px; color: var(--ink); }
 .running::before { content: "\25CF  "; color: var(--warn); }
 .feed { max-height: 168px; overflow-y: auto; font-size: 12px; }
 .feed .row { display: grid; grid-template-columns: 64px 10px minmax(0, 1.4fr) minmax(60px, 1fr) 52px; gap: 8px; align-items: center; padding: 2px 0; }
@@ -121,11 +167,13 @@ pre { background: var(--page); border: 1px solid var(--border); border-radius: 8
 .feed .ms { text-align: right; color: var(--ink-2); font-variant-numeric: tabular-nums; }
 
 #setup p { margin: 6px 0; }
-#setup .key { background: var(--page); border: 1px solid var(--border); border-radius: 5px; padding: 0 5px; }
+#setup .key { border-radius: 6px; padding: 0 6px; box-shadow: none; }
 #setup .ok { color: var(--ink); }
 #setup .ok::before { content: "\2713  "; color: var(--hooks); font-weight: 700; }
 #setup .bad { color: var(--critical); }
 button.primary {
-  background: var(--api); color: #fff; border: 0; border-radius: 7px; padding: 5px 12px; font: inherit; font-weight: 600; cursor: pointer; margin-right: 8px;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--api) 85%, white), var(--api));
+  color: #fff; border: 0; border-radius: 999px; padding: 6px 16px; font: inherit; font-weight: 600; cursor: pointer; margin-right: 8px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35), 0 4px 12px color-mix(in srgb, var(--api) 35%, transparent);
 }
 button.primary:disabled { opacity: 0.6; cursor: default; }

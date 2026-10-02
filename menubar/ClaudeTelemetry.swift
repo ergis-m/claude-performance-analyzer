@@ -79,8 +79,18 @@ final class StatusItemController: NSObject, WKNavigationDelegate {
 
     private lazy var webView: WKWebView = {
         let configuration = WKWebViewConfiguration()
+        // Tell the page it is in the popover so it drops its own background.
+        let marker = WKUserScript(
+            source: "document.documentElement.dataset.host = 'popover';",
+            injectionTime: .atDocumentStart,
+            forMainFrameOnly: true
+        )
+        configuration.userContentController.addUserScript(marker)
         let view = WKWebView(frame: NSRect(x: 0, y: 0, width: 820, height: 680), configuration: configuration)
         view.navigationDelegate = self
+        // Transparent web view lets the popover's system glass show through.
+        view.setValue(false, forKey: "drawsBackground")
+        view.underPageBackgroundColor = .clear
         return view
     }()
 
@@ -182,7 +192,7 @@ final class StatusItemController: NSObject, WKNavigationDelegate {
     private func showOfflineMessage() {
         let html = """
         <html>
-        <body style="font-family: -apple-system, sans-serif; padding: 48px; text-align: center; color: #333;">
+        <body style="font-family: -apple-system, sans-serif; padding: 48px; text-align: center; color-scheme: light dark; background: transparent;">
         <h2>Collector not running.</h2>
         <p>Start it with: <code>bun run start</code></p>
         </body>
