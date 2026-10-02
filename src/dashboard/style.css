@@ -77,10 +77,14 @@ nav button.on { background: var(--surface); color: var(--ink); font-weight: 600;
 .kpi .sub { font-size: 11px; color: var(--muted); }
 .kpi.flag .label::before { content: "\26A0  "; color: var(--warn); }
 
-svg text { fill: var(--muted); font-size: 11px; font-variant-numeric: tabular-nums; }
-svg text.ink { fill: var(--ink-2); }
 .legend { display: flex; gap: 14px; font-size: 11px; color: var(--ink-2); margin-bottom: 6px; flex-wrap: wrap; }
 .legend i { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 5px; vertical-align: -1px; }
+
+/* echarts containers: fixed-size ones get a height here, variable-row ones get it from JS. */
+#c-breakdown { height: 44px; }
+#c-latency { height: 200px; }
+#c-prompts { cursor: pointer; }
+.wf-scroll { max-height: 920px; overflow-y: auto; }
 
 table { width: 100%; border-collapse: collapse; font-size: 12px; }
 th { text-align: left; font-weight: 500; color: var(--muted); padding: 3px 6px 5px 0; border-bottom: 1px solid var(--grid); }
