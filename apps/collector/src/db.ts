@@ -1,5 +1,5 @@
 import { Database } from "bun:sqlite";
-import type { EventRow, MetricRow, SpanRow } from "./otlp";
+import type { EventRow, MetricRow, SpanRow } from "@cpa/otlp";
 
 export type Store = ReturnType<typeof openStore>;
 

@@ -1,11 +1,10 @@
 import { homedir } from "node:os";
 import { mkdirSync } from "node:fs";
-import dashboard from "./dashboard/index.html";
+import dashboard from "@cpa/dashboard/index.html";
 import { openStore } from "./db";
-import { parseLogs, parseMetrics, parseTraces, type EventRow } from "./otlp";
-import { decodeOtlp, type Signal } from "./otlp-proto";
-import { liveEvent, status, summarize, turnTimeline } from "./analytics";
-import { applyEnv, planEnv, settingsPath, telemetryEnv } from "./settings";
+import { decodeOtlp, parseLogs, parseMetrics, parseTraces, type EventRow, type Signal } from "@cpa/otlp";
+import { liveEvent, status, summarize, turnTimeline } from "@cpa/analytics";
+import { applyEnv, planEnv, settingsPath, telemetryEnv } from "@cpa/claude-settings";
 
 const PORT = Number(process.env.PORT ?? 4318);
 const DATA_DIR = process.env.CC_TELEMETRY_DIR ?? `${homedir()}/.claude-telemetry`;

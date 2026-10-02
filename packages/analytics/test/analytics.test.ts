@@ -1,6 +1,6 @@
 import { expect, test } from "bun:test";
-import { parseLogs, parseTraces } from "../src/otlp";
-import { percentile, status, summarize, toolLabel } from "../src/analytics";
+import { parseLogs, parseTraces } from "@cpa/otlp";
+import { percentile, status, summarize, toolLabel } from "../src";
 
 const NOW = Date.parse("2026-10-02T12:00:00Z");
 const s = (v: string) => ({ stringValue: v });
@@ -111,7 +111,7 @@ test("helpers", () => {
 });
 
 test("turnTimeline places each span at timestamp minus duration", async () => {
-  const { turnTimeline } = await import("../src/analytics");
+  const { turnTimeline } = await import("../src");
   const t = turnTimeline(parseLogs(payload).filter((e) => e.tsMs > NOW - 3600_000))!;
   expect(t.promptId).toBe("p-1");
   expect(t.startMs).toBe(NOW - 10000);

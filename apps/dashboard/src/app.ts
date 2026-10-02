@@ -1,5 +1,5 @@
-import type { LatencyStats, PromptBreakdown, Summary, TurnSpan, TurnTimeline } from "../analytics";
-import { fmtMs } from "../analytics";
+import type { LatencyStats, PromptBreakdown, Summary, TurnSpan, TurnTimeline } from "@cpa/analytics";
+import { fmtMs } from "@cpa/analytics";
 import { startLive } from "./live";
 import { startSetup } from "./setup";
 

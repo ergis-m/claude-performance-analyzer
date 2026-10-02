@@ -1,0 +1,7 @@
+{
+  "name": "@cpa/dashboard",
+  "type": "module",
+  "private": true,
+  "exports": { "./index.html": "./index.html" },
+  "dependencies": { "@cpa/analytics": "workspace:*", "@cpa/claude-settings": "workspace:*", "echarts": "^6.1.0" }
+}

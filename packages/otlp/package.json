@@ -1,0 +1,7 @@
+{
+  "name": "@cpa/otlp",
+  "type": "module",
+  "private": true,
+  "exports": { ".": "./src/index.ts" },
+  "dependencies": { "protobufjs": "^8.8.0" }
+}

@@ -1,0 +1,8 @@
+{
+  "name": "@cpa/menubar",
+  "private": true,
+  "scripts": {
+    "build": "./build.sh",
+    "start": "./build.sh && open build/ClaudeTelemetry.app"
+  }
+}

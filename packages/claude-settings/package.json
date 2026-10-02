@@ -1,0 +1,7 @@
+{
+  "name": "@cpa/claude-settings",
+  "type": "module",
+  "private": true,
+  "exports": { ".": "./src/index.ts" },
+  "dependencies": { "jsonc-parser": "^3.3.1" }
+}
