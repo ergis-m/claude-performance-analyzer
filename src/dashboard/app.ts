@@ -1,6 +1,7 @@
 import type { LatencyStats, PromptBreakdown, Summary } from "../analytics";
 import { fmtMs } from "../analytics";
 import { startLive } from "./live";
+import { startSetup } from "./setup";
 
 const app = document.getElementById("app")!;
 const tip = document.getElementById("tip")!;
@@ -209,7 +210,7 @@ function table(headers: string[], rows: (string | number)[][], numericFrom = 1) 
 
 function setupHelp() {
   return `<div class="card"><h2>No telemetry yet</h2>
-  <p>Start Claude Code with these variables (or add them to the <code>env</code> block of <code>~/.claude/settings.json</code>):</p>
+  <p>Use the button above, or start Claude Code with these variables:</p>
   <pre>CLAUDE_CODE_ENABLE_TELEMETRY=1
 OTEL_LOGS_EXPORTER=otlp
 OTEL_METRICS_EXPORTER=otlp
@@ -317,5 +318,6 @@ function loadSoon() {
 markNav();
 load();
 startLive(document.getElementById("live")!, loadSoon);
+startSetup(document.getElementById("setup")!);
 // Fallback for when the socket is down, and to roll the time window forward.
 setInterval(load, 30_000);

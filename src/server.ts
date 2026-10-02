@@ -4,6 +4,7 @@ import dashboard from "./dashboard/index.html";
 import { openStore } from "./db";
 import { parseLogs, parseMetrics, parseTraces, type EventRow } from "./otlp";
 import { liveEvent, status, summarize } from "./analytics";
+import { applyEnv, planEnv, settingsPath, telemetryEnv } from "./settings";
 
 const PORT = Number(process.env.PORT ?? 4318);
 const DATA_DIR = process.env.CC_TELEMETRY_DIR ?? `${homedir()}/.claude-telemetry`;
@@ -64,6 +65,28 @@ function recentLive(limit: number) {
     .reverse();
 }
 
+// The setup endpoint writes user settings, so only our own page may call it.
+// Host blocks DNS rebinding; Origin blocks cross-site form posts.
+function isOwnPage(req: Request): boolean {
+  const own = [`127.0.0.1:${PORT}`, `localhost:${PORT}`];
+  const host = req.headers.get("host") ?? "";
+  const origin = req.headers.get("origin") ?? "";
+  return own.includes(host) && own.some((h) => origin === `http://${h}`) && (req.headers.get("content-type") ?? "").includes("application/json");
+}
+
+function setup(req: Request) {
+  const wanted = telemetryEnv(PORT);
+  if (req.method === "GET") return Response.json(planEnv(settingsPath(), wanted));
+  if (!isOwnPage(req)) return new Response("Forbidden", { status: 403 });
+  try {
+    const result = applyEnv(settingsPath(), wanted);
+    console.log(`settings: added ${result.added.join(", ") || "nothing"}${result.backup ? `, backup ${result.backup}` : ""}`);
+    return Response.json(result);
+  } catch (err) {
+    return Response.json({ error: (err as Error).message }, { status: 409 });
+  }
+}
+
 const server = Bun.serve({
   port: PORT,
   hostname: "127.0.0.1",
@@ -75,6 +98,7 @@ const server = Bun.serve({
     "/api/summary": (req) => Response.json(summaryFor(windowFrom(new URL(req.url)))),
     "/api/status": () => Response.json(status(summaryFor(15 * 60_000))),
     "/api/live": () => Response.json(recentLive(60)),
+    "/api/setup": { GET: setup, POST: setup },
     "/ws": (req, srv) => (srv.upgrade(req) ? undefined : new Response("WebSocket upgrade required", { status: 426 })),
   },
   websocket: {

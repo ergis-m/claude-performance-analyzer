@@ -13,7 +13,7 @@ bun run start      # collector + dashboard
 bun run app        # build and open the menu bar app
 ```
 
-Point Claude Code at the collector (shell env, or the `env` block in `~/.claude/settings.json`):
+Point Claude Code at the collector. The dashboard has a button that adds any missing variables to the `env` block of `~/.claude/settings.json` (existing values are kept, a backup is written next to the file). Or set them yourself:
 
 ```bash
 CLAUDE_CODE_ENABLE_TELEMETRY=1

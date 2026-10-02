@@ -116,3 +116,13 @@ pre { background: var(--page); border: 1px solid var(--border); border-radius: 8
 .feed .track { height: 8px; }
 .feed .bar { display: block; height: 8px; border-radius: 0 3px 3px 0; }
 .feed .ms { text-align: right; color: var(--ink-2); font-variant-numeric: tabular-nums; }
+
+#setup p { margin: 6px 0; }
+#setup .key { background: var(--page); border: 1px solid var(--border); border-radius: 5px; padding: 0 5px; }
+#setup .ok { color: var(--ink); }
+#setup .ok::before { content: "\2713  "; color: var(--hooks); font-weight: 700; }
+#setup .bad { color: var(--critical); }
+button.primary {
+  background: var(--api); color: #fff; border: 0; border-radius: 7px; padding: 5px 12px; font: inherit; font-weight: 600; cursor: pointer; margin-right: 8px;
+}
+button.primary:disabled { opacity: 0.6; cursor: default; }
