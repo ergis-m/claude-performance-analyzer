@@ -3,7 +3,7 @@ import { mkdirSync } from "node:fs";
 import dashboard from "./dashboard/index.html";
 import { openStore } from "./db";
 import { parseLogs, parseMetrics, parseTraces, type EventRow } from "./otlp";
-import { liveEvent, status, summarize } from "./analytics";
+import { liveEvent, status, summarize, turnTimeline } from "./analytics";
 import { applyEnv, planEnv, settingsPath, telemetryEnv } from "./settings";
 
 const PORT = Number(process.env.PORT ?? 4318);
@@ -98,6 +98,7 @@ const server = Bun.serve({
     "/api/summary": (req) => Response.json(summaryFor(windowFrom(new URL(req.url)))),
     "/api/status": () => Response.json(status(summaryFor(15 * 60_000))),
     "/api/live": () => Response.json(recentLive(60)),
+    "/api/turn": (req) => Response.json(turnTimeline(store.promptEvents(new URL(req.url).searchParams.get("prompt")))),
     "/api/setup": { GET: setup, POST: setup },
     "/ws": (req, srv) => (srv.upgrade(req) ? undefined : new Response("WebSocket upgrade required", { status: 426 })),
   },

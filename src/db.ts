@@ -9,6 +9,7 @@ export function openStore(path: string) {
   db.run(`CREATE TABLE IF NOT EXISTS events (
     ts_ms INTEGER NOT NULL, name TEXT NOT NULL, session_id TEXT, prompt_id TEXT, attrs TEXT NOT NULL)`);
   db.run("CREATE INDEX IF NOT EXISTS events_ts ON events (ts_ms)");
+  db.run("CREATE INDEX IF NOT EXISTS events_prompt ON events (prompt_id, ts_ms)");
   db.run(`CREATE TABLE IF NOT EXISTS spans (
     trace_id TEXT, span_id TEXT, parent_id TEXT, name TEXT NOT NULL,
     start_ms INTEGER NOT NULL, end_ms INTEGER NOT NULL, session_id TEXT, attrs TEXT NOT NULL)`);
@@ -48,6 +49,17 @@ export function openStore(path: string) {
           promptId: r.prompt_id,
           attrs: JSON.parse(r.attrs),
         }));
+    },
+    // Most recent prompt when no id is given.
+    promptEvents(promptId: string | null): EventRow[] {
+      const id =
+        promptId ??
+        (db.query("SELECT prompt_id FROM events WHERE prompt_id IS NOT NULL ORDER BY ts_ms DESC LIMIT 1").get() as any)?.prompt_id;
+      if (!id) return [];
+      return db
+        .query("SELECT ts_ms, name, session_id, prompt_id, attrs FROM events WHERE prompt_id = ? ORDER BY ts_ms")
+        .all(id)
+        .map((r: any) => ({ tsMs: r.ts_ms, name: r.name, sessionId: r.session_id, promptId: r.prompt_id, attrs: JSON.parse(r.attrs) }));
     },
     spans(sinceMs: number): SpanRow[] {
       return db

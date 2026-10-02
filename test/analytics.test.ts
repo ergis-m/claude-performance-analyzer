@@ -109,3 +109,15 @@ test("helpers", () => {
   expect(percentile([], 95)).toBe(0);
   expect(toolLabel({ tool_name: "mcp_tool", tool_parameters: '{"mcp_server_name":"outline","mcp_tool_name":"fetch"}' })).toBe("mcp: outline/fetch");
 });
+
+test("turnTimeline places each span at timestamp minus duration", async () => {
+  const { turnTimeline } = await import("../src/analytics");
+  const t = turnTimeline(parseLogs(payload).filter((e) => e.tsMs > NOW - 3600_000))!;
+  expect(t.promptId).toBe("p-1");
+  expect(t.startMs).toBe(NOW - 10000);
+  expect(t.endMs).toBe(NOW - 1000);
+  const hook = t.spans.find((s) => s.label === "PreToolUse:Bash")!;
+  expect([hook.startMs, hook.endMs, hook.ok]).toEqual([NOW - 8800, NOW - 5800, false]);
+  expect(t.spans.map((s) => s.kind)).toEqual(["hook", "hook", "api", "tool", "api", "tool"]);
+  expect(turnTimeline([])).toBeNull();
+});

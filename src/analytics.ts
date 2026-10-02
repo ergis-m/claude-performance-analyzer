@@ -336,3 +336,51 @@ export function liveEvent(e: EventRow): LiveEvent | null {
       return null;
   }
 }
+
+export interface TurnSpan {
+  kind: "api" | "tool" | "hook" | "agent" | "compaction";
+  label: string;
+  startMs: number;
+  endMs: number;
+  ok: boolean;
+}
+
+// Events are logged when work ends, so each span starts at timestamp minus duration.
+export function turnTimeline(events: EventRow[]) {
+  if (!events.length) return null;
+  const spans: TurnSpan[] = [];
+  let command: string | null = null;
+  let promptAt = Infinity;
+  for (const e of events) {
+    const a = e.attrs;
+    const span = (kind: TurnSpan["kind"], label: string, ms: number, ok = true) =>
+      spans.push({ kind, label, startMs: e.tsMs - ms, endMs: e.tsMs, ok });
+    switch (e.name) {
+      case "user_prompt":
+        promptAt = Math.min(promptAt, e.tsMs);
+        if (a.command_name) command = String(a.command_name);
+        break;
+      case "api_request":
+        span("api", `${a.model ?? "model"}${a.query_source && a.query_source !== "repl_main_thread" ? ` (${a.query_source})` : ""}`, num(a.duration_ms));
+        break;
+      case "tool_result":
+        span("tool", toolLabel(a), num(a.duration_ms), !isFalse(a.success));
+        break;
+      case "hook_execution_complete":
+        span("hook", String(a.hook_name ?? a.hook_event ?? "hook"), num(a.total_duration_ms), num(a.num_non_blocking_error) === 0);
+        break;
+      case "subagent_completed":
+        span("agent", `agent ${a.agent_type ?? "?"}`, num(a.duration_ms));
+        break;
+      case "compaction":
+        span("compaction", "compaction", num(a.duration_ms), !isFalse(a.success));
+        break;
+    }
+  }
+  spans.sort((x, y) => x.startMs - y.startMs);
+  const startMs = Math.min(promptAt, ...spans.map((s) => s.startMs), ...events.map((e) => e.tsMs));
+  const endMs = Math.max(...events.map((e) => e.tsMs));
+  return { promptId: events[0]!.promptId, command, startMs, endMs, spans };
+}
+
+export type TurnTimeline = NonNullable<ReturnType<typeof turnTimeline>>;
