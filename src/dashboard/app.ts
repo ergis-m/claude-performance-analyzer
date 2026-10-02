@@ -385,8 +385,8 @@ function kindColor(pal: Palette, kind: TurnSpan["kind"]): string {
   return pal.muted;
 }
 
-const WF_ROW_H = 22;
-const WF_MAX_ROWS = 40;
+const WF_ROW_H = 14;
+const WF_VISIBLE_ROWS = 15;
 
 function waterfallOption(pal: Palette, turn: TurnTimeline): Option {
   const rows = turn.spans.map((sp) => ({ ...sp, startOffset: sp.startMs - turn.startMs, endOffset: sp.endMs - turn.startMs }));
@@ -397,7 +397,15 @@ function waterfallOption(pal: Palette, turn: TurnTimeline): Option {
   return {
     backgroundColor: "transparent",
     textStyle: { fontFamily: FONT },
-    grid: { left: leftMarginFor(categories), right: 20, top: 8, bottom: 26 },
+    grid: { left: leftMarginFor(categories), right: rows.length > WF_VISIBLE_ROWS ? 28 : 20, top: 8, bottom: 26 },
+    // Long turns scroll rows inside the chart, so the time axis stays in view.
+    dataZoom:
+      rows.length > WF_VISIBLE_ROWS
+        ? [
+            { type: "inside", yAxisIndex: 0, startValue: 0, endValue: WF_VISIBLE_ROWS - 1, zoomLock: true, moveOnMouseWheel: true, zoomOnMouseWheel: false },
+            { type: "slider", yAxisIndex: 0, startValue: 0, endValue: WF_VISIBLE_ROWS - 1, zoomLock: true, width: 8, right: 6, brushSelect: false, showDetail: false, borderColor: "transparent", fillerColor: pal.axis, handleSize: 0 },
+          ]
+        : [],
     xAxis: {
       type: "value",
       min: 0,
@@ -410,7 +418,7 @@ function waterfallOption(pal: Palette, turn: TurnTimeline): Option {
       data: categories,
       inverse: true,
       // Show every row label; echarts hides some by default when rows are tight.
-      axisLabel: { color: pal.ink2, fontSize: 11, fontFamily: FONT, interval: 0 },
+      axisLabel: { color: pal.ink2, fontSize: 10, fontFamily: FONT, interval: 0 },
       axisLine: { lineStyle: { color: pal.axis } },
       axisTick: { show: false },
     },
@@ -435,7 +443,7 @@ function waterfallOption(pal: Palette, turn: TurnTimeline): Option {
           const categoryIndex = api.value(0);
           const start = api.coord([api.value(1), categoryIndex]);
           const end = api.coord([api.value(2), categoryIndex]);
-          const height = (api.size([0, 1]) as number[])[1]! * 0.6;
+          const height = (api.size([0, 1]) as number[])[1]! * 0.7;
           const shape = (echarts as any).graphic.clipRectByRect(
             { x: start[0], y: start[1] - height / 2, width: Math.max(1, end[0] - start[0]), height },
             { x: params.coordSys.x, y: params.coordSys.y, width: params.coordSys.width, height: params.coordSys.height },
@@ -573,7 +581,7 @@ function renderWaterfall(turn: TurnTimeline | null) {
   }
   titleEl.textContent = waterfallTitle(turn);
   // Plus room for the x axis and grid padding.
-  byId("c-waterfall").style.height = `${Math.max(1, turn.spans.length) * WF_ROW_H + 40}px`;
+  byId("c-waterfall").style.height = `${Math.min(Math.max(1, turn.spans.length), WF_VISIBLE_ROWS) * WF_ROW_H + 40}px`;
   const c = chartFor("c-waterfall");
   c.resize();
   // notMerge: span count changes per prompt.
@@ -595,7 +603,7 @@ function skeletonHtml(): string {
     <div class="card"><h2>Turn waterfall</h2>
       <div class="muted" id="wf-title" style="font-size:11px;margin-bottom:6px"></div>
       ${legend([["--api", "Model (API)"], ["--tools", "Tools"], ["--hooks", "Hooks"], ["--muted", "Agent / compaction"]])}
-      <div class="wf-scroll"><div id="c-waterfall"></div></div>
+      <div id="c-waterfall"></div>
     </div>
     <div class="card"><h2>API latency over time</h2><div id="c-latency"></div></div>
     <div class="grid2">

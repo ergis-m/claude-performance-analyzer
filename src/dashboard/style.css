@@ -84,7 +84,6 @@ nav button.on { background: var(--surface); color: var(--ink); font-weight: 600;
 #c-breakdown { height: 44px; }
 #c-latency { height: 200px; }
 #c-prompts { cursor: pointer; }
-.wf-scroll { max-height: 920px; overflow-y: auto; }
 
 table { width: 100%; border-collapse: collapse; font-size: 12px; }
 th { text-align: left; font-weight: 500; color: var(--muted); padding: 3px 6px 5px 0; border-bottom: 1px solid var(--grid); }
