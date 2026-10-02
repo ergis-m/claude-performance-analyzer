@@ -2,7 +2,7 @@
 
 macOS menu bar widget for Claude Code telemetry. Shows where turn time goes: model latency, tools, hooks, skills, subagents, MCP startup.
 
-- `src/server.ts`: Bun OTLP receiver (http/json) on `127.0.0.1:4318`, stores to `~/.claude-telemetry/telemetry.sqlite` (14 day retention), serves the dashboard and `/api/summary`, `/api/status`.
+- `src/server.ts`: Bun OTLP receiver (http/json or http/protobuf, gzip ok) on `127.0.0.1:4318`, stores to `~/.claude-telemetry/telemetry.sqlite` (14 day retention), serves the dashboard and `/api/summary`, `/api/status`.
 - `menubar/`: Swift status bar app. Label is API p50 latency over the last 15 min, orange when hooks are slow. Click opens the dashboard in a popover, right click for menu.
 
 ## Run
@@ -19,7 +19,7 @@ Point Claude Code at the collector. The dashboard has a button that adds any mis
 CLAUDE_CODE_ENABLE_TELEMETRY=1
 OTEL_LOGS_EXPORTER=otlp
 OTEL_METRICS_EXPORTER=otlp
-OTEL_EXPORTER_OTLP_PROTOCOL=http/json
+OTEL_EXPORTER_OTLP_PROTOCOL=http/json      # http/protobuf works too; grpc does not
 OTEL_EXPORTER_OTLP_ENDPOINT=http://127.0.0.1:4318
 OTEL_LOGS_EXPORT_INTERVAL=1000            # how "real time" the live feed is
 OTEL_LOG_TOOL_DETAILS=1                 # real skill, MCP and subagent names
@@ -33,3 +33,7 @@ OTEL_TRACES_EXPORTER=otlp
 - Rules have no timing in telemetry. They only appear as `source: config` permission decisions.
 - Hook timing is per hook event and matcher (`PreToolUse:Bash`), not per script. Per-script detail needs detailed beta tracing.
 - "Where turn time goes" sums component durations; parallel tool calls overlap.
+
+## Third-party files
+
+`proto/` holds the OTLP `.proto` definitions from [open-telemetry/opentelemetry-proto](https://github.com/open-telemetry/opentelemetry-proto) v1.11.1, Apache 2.0 (see `proto/LICENSE`).

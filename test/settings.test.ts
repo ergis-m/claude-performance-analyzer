@@ -29,6 +29,26 @@ test("adds only missing keys and never touches existing values", () => {
   expect(applyEnv(path, wanted).backup).toBeNull();
 });
 
+test("edits text in place: comments, key order and spacing survive", () => {
+  const path = join(tmp(), "settings.json");
+  const raw = `{
+  // personal notes
+  "permissions": { "allow": ["Bash(ls:*)"] },
+  "env": {
+    "ANTHROPIC_AUTH_TOKEN": "sk-secret",
+  },
+  "model":   "opus"
+}
+`;
+  writeFileSync(path, raw);
+  applyEnv(path, wanted);
+  const after = readFileSync(path, "utf8");
+  for (const line of ["  // personal notes", '  "permissions": { "allow": ["Bash(ls:*)"] },', '    "ANTHROPIC_AUTH_TOKEN": "sk-secret",', '  "model":   "opus"']) expect(after).toContain(line);
+  expect(after.indexOf("permissions")).toBeLessThan(after.indexOf('"model"'));
+  expect(after).toContain('    "CLAUDE_CODE_ENABLE_TELEMETRY": "1"');
+  expect(planEnv(path, wanted).missing).toEqual([]);
+});
+
 test("plan reports key names only, never values", () => {
   const path = join(tmp(), "settings.json");
   writeFileSync(path, JSON.stringify(original));

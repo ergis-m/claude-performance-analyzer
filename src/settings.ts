@@ -1,6 +1,7 @@
 // Adds the telemetry variables to the "env" block of Claude Code's user settings.
 import { copyFileSync, existsSync, readFileSync, realpathSync, renameSync, statSync, writeFileSync, chmodSync } from "node:fs";
 import { homedir } from "node:os";
+import { applyEdits, modify, parse, printParseErrorCode, type ParseError } from "jsonc-parser";
 import { dirname, join } from "node:path";
 
 export function telemetryEnv(port: number): Record<string, string> {
@@ -34,14 +35,17 @@ export interface EnvPlan {
 function read(path: string): { settings: Record<string, any> | null; raw: string | null; error: string | null } {
   if (!existsSync(path)) return { settings: {}, raw: null, error: null };
   const raw = readFileSync(path, "utf8");
-  try {
-    const parsed = JSON.parse(raw);
+  const errors: ParseError[] = [];
+  const parsed = parse(raw, errors, { allowTrailingComma: true });
+  if (errors.length) {
+    const e = errors[0]!;
+    return { settings: null, raw, error: `settings.json is not valid JSON: ${printParseErrorCode(e.error)} at offset ${e.offset}` };
+  }
+  {
     if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) return { settings: null, raw, error: "settings.json is not a JSON object" };
     if (parsed.env !== undefined && (typeof parsed.env !== "object" || parsed.env === null || Array.isArray(parsed.env)))
       return { settings: null, raw, error: '"env" in settings.json is not an object' };
     return { settings: parsed, raw, error: null };
-  } catch (err) {
-    return { settings: null, raw, error: `settings.json is not valid JSON: ${(err as Error).message}` };
   }
 }
 
@@ -58,10 +62,10 @@ export function planEnv(path: string, wanted: Record<string, string>): EnvPlan {
   return plan;
 }
 
-// Keep the file's own indent so the diff stays small.
-function detectIndent(raw: string | null): string | number {
-  const m = raw?.match(/^\{\r?\n([ \t]+)"/);
-  return m ? m[1]! : 2;
+// Match the file's own indent and line endings so the diff stays small.
+function formatting(raw: string) {
+  const indent = raw.match(/^\{\r?\n([ \t]+)"/)?.[1] ?? "  ";
+  return { insertSpaces: !indent.includes("\t"), tabSize: indent.includes("\t") ? 1 : indent.length, eol: raw.includes("\r\n") ? "\r\n" : "\n" };
 }
 
 // Adds missing keys only. Existing values, including conflicting ones, are never changed.
@@ -71,8 +75,10 @@ export function applyEnv(path: string, wanted: Record<string, string>, nowMs = D
   const plan = planEnv(path, wanted);
   if (!plan.missing.length) return { added: [] as string[], backup: null as string | null, plan };
 
-  settings.env = { ...(settings.env ?? {}) };
-  for (const key of plan.missing) settings.env[key] = wanted[key];
+  // Edit the text in place: untouched keys, order, comments and spacing survive.
+  let text = raw ?? "{}\n";
+  const fmt = formatting(text);
+  for (const key of plan.missing) text = applyEdits(text, modify(text, ["env", key], wanted[key], { formattingOptions: fmt }));
 
   // Write through a symlink to its target, so a dotfiles link stays a link.
   const target = existsSync(path) ? realpathSync(path) : path;
@@ -85,7 +91,7 @@ export function applyEnv(path: string, wanted: Record<string, string>, nowMs = D
     chmodSync(backup, mode);
   }
   const tmp = join(dirname(target), `.settings.json.tmp-${process.pid}`);
-  writeFileSync(tmp, JSON.stringify(settings, null, detectIndent(raw)) + (raw === null || raw.endsWith("\n") ? "\n" : ""), { mode });
+  writeFileSync(tmp, text, { mode });
   renameSync(tmp, target);
   return { added: plan.missing, backup, plan: planEnv(path, wanted) };
 }
