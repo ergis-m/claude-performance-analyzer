@@ -296,3 +296,43 @@ export function status(s: Summary) {
   if (slowHook) lines.push(`Slowest hook: ${slowHook.name} p95 ${fmtMs(slowHook.p95)}`);
   return { label: fmtMs(k.apiP50), state: slow ? "slow" : "ok", tooltip: lines.join("\n") };
 }
+
+export interface LiveEvent {
+  tsMs: number;
+  kind: "prompt" | "api" | "tool" | "hook" | "hook_start" | "agent" | "skill" | "mcp" | "error" | "compaction";
+  label: string;
+  ms: number | null;
+  ok: boolean;
+  sessionId: string | null;
+}
+
+// One feed row per event worth watching live. Startup noise (plugin/hook registration) is dropped.
+export function liveEvent(e: EventRow): LiveEvent | null {
+  const a = e.attrs;
+  const base = { tsMs: e.tsMs, sessionId: e.sessionId, ok: true, ms: null as number | null };
+  switch (e.name) {
+    case "user_prompt":
+      return { ...base, kind: "prompt", label: a.command_name ? `/${a.command_name}` : `prompt, ${num(a.prompt_length)} chars` };
+    case "api_request":
+      return { ...base, kind: "api", label: `${a.model ?? "model"} ${num(a.output_tokens)} tok out`, ms: num(a.duration_ms) };
+    case "api_error":
+      return { ...base, kind: "error", label: `API error ${a.status_code ?? ""}`.trim(), ms: num(a.duration_ms), ok: false };
+    case "tool_result":
+      return { ...base, kind: "tool", label: toolLabel(a), ms: num(a.duration_ms), ok: !isFalse(a.success) };
+    case "hook_execution_start":
+      return { ...base, kind: "hook_start", label: String(a.hook_name ?? a.hook_event ?? "hook") };
+    case "hook_execution_complete":
+      return { ...base, kind: "hook", label: String(a.hook_name ?? a.hook_event ?? "hook"), ms: num(a.total_duration_ms), ok: num(a.num_non_blocking_error) === 0 };
+    case "subagent_completed":
+      return { ...base, kind: "agent", label: `agent ${a.agent_type ?? "?"}`, ms: num(a.duration_ms) };
+    case "skill_activated":
+      return { ...base, kind: "skill", label: `skill ${a["skill.name"] ?? "?"}` };
+    case "mcp_server_connection":
+      if (a.status === "disconnected") return null;
+      return { ...base, kind: "mcp", label: `mcp ${a.server_name ?? a.transport_type ?? "?"} ${a.status}`, ms: num(a.duration_ms), ok: a.status !== "failed" };
+    case "compaction":
+      return { ...base, kind: "compaction", label: `compaction (${a.trigger ?? "?"})`, ms: num(a.duration_ms), ok: !isFalse(a.success) };
+    default:
+      return null;
+  }
+}

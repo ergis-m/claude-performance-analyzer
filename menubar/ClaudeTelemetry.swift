@@ -36,7 +36,7 @@ final class TelemetryPoller {
 
     func start() {
         pollNow()
-        let newTimer = Timer(timeInterval: 5.0, repeats: true) { [weak self] _ in
+        let newTimer = Timer(timeInterval: 2.0, repeats: true) { [weak self] _ in
             Task { @MainActor in
                 self?.pollNow()
             }

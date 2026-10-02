@@ -2,8 +2,8 @@ import { homedir } from "node:os";
 import { mkdirSync } from "node:fs";
 import dashboard from "./dashboard/index.html";
 import { openStore } from "./db";
-import { parseLogs, parseMetrics, parseTraces } from "./otlp";
-import { status, summarize } from "./analytics";
+import { parseLogs, parseMetrics, parseTraces, type EventRow } from "./otlp";
+import { liveEvent, status, summarize } from "./analytics";
 
 const PORT = Number(process.env.PORT ?? 4318);
 const DATA_DIR = process.env.CC_TELEMETRY_DIR ?? `${homedir()}/.claude-telemetry`;
@@ -24,11 +24,12 @@ async function readOtlp(req: Request): Promise<any> {
   return JSON.parse(new TextDecoder().decode(bytes));
 }
 
-function ingest<T>(parse: (b: any) => T[], save: (rows: T[]) => void) {
+function ingest<T>(parse: (b: any) => T[], save: (rows: T[]) => void, onSaved?: (rows: T[]) => void) {
   return async (req: Request) => {
     try {
       const rows = parse(await readOtlp(req));
       save(rows);
+      onSaved?.(rows);
       return Response.json({});
     } catch (err) {
       if (err instanceof Response) return err;
@@ -48,16 +49,39 @@ function summaryFor(windowMs: number) {
   return summarize(store.events(since), store.spans(since), windowMs);
 }
 
+// Push new events to open dashboards so they update without polling.
+function broadcast(rows: EventRow[]) {
+  const events = rows.map(liveEvent).filter((e) => e !== null);
+  server.publish("live", JSON.stringify({ type: "events", events, changed: rows.length }));
+}
+
+function recentLive(limit: number) {
+  return store
+    .events(Date.now() - 3600_000)
+    .map(liveEvent)
+    .filter((e) => e !== null)
+    .slice(-limit)
+    .reverse();
+}
+
 const server = Bun.serve({
   port: PORT,
   hostname: "127.0.0.1",
   routes: {
     "/": dashboard,
-    "/v1/logs": { POST: ingest(parseLogs, store.addEvents) },
+    "/v1/logs": { POST: ingest(parseLogs, store.addEvents, broadcast) },
     "/v1/traces": { POST: ingest(parseTraces, store.addSpans) },
     "/v1/metrics": { POST: ingest(parseMetrics, store.addMetrics) },
     "/api/summary": (req) => Response.json(summaryFor(windowFrom(new URL(req.url)))),
     "/api/status": () => Response.json(status(summaryFor(15 * 60_000))),
+    "/api/live": () => Response.json(recentLive(60)),
+    "/ws": (req, srv) => (srv.upgrade(req) ? undefined : new Response("WebSocket upgrade required", { status: 426 })),
+  },
+  websocket: {
+    open: (ws) => {
+      ws.subscribe("live");
+    },
+    message: () => {},
   },
   development: process.env.NODE_ENV !== "production" ? { hmr: false, console: true } : false,
 });

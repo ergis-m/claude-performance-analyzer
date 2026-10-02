@@ -97,3 +97,22 @@ pre { background: var(--page); border: 1px solid var(--border); border-radius: 8
   padding: 6px 9px; font-size: 12px; box-shadow: 0 4px 16px rgba(0, 0, 0, 0.18); white-space: pre; max-width: 360px;
 }
 [data-tip]:hover { opacity: 0.85; }
+
+#live { padding: 10px 14px; }
+.live-head { display: flex; align-items: center; gap: 8px; font-size: 12px; margin-bottom: 6px; flex-wrap: wrap; }
+.dot { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); }
+.dot.on { background: var(--hooks); animation: pulse 1.6s ease-in-out infinite; }
+@keyframes pulse { 50% { opacity: 0.35; } }
+.running { background: var(--page); border: 1px solid var(--border); border-radius: 6px; padding: 1px 7px; color: var(--ink); }
+.running::before { content: "\25CF  "; color: var(--warn); }
+.feed { max-height: 168px; overflow-y: auto; font-size: 12px; }
+.feed .row { display: grid; grid-template-columns: 64px 10px minmax(0, 1.4fr) minmax(60px, 1fr) 52px; gap: 8px; align-items: center; padding: 2px 0; }
+.feed .row.fresh { animation: flash 1.2s ease-out; }
+@keyframes flash { from { background: color-mix(in srgb, var(--api) 22%, transparent); } }
+.feed .row.bad .lbl { color: var(--critical); }
+.feed .t { color: var(--muted); font-variant-numeric: tabular-nums; }
+.feed .chip { width: 8px; height: 8px; border-radius: 2px; }
+.feed .lbl { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--ink-2); }
+.feed .track { height: 8px; }
+.feed .bar { display: block; height: 8px; border-radius: 0 3px 3px 0; }
+.feed .ms { text-align: right; color: var(--ink-2); font-variant-numeric: tabular-nums; }

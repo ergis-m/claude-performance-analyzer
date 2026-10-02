@@ -1,5 +1,6 @@
 import type { LatencyStats, PromptBreakdown, Summary } from "../analytics";
 import { fmtMs } from "../analytics";
+import { startLive } from "./live";
 
 const app = document.getElementById("app")!;
 const tip = document.getElementById("tip")!;
@@ -214,7 +215,7 @@ OTEL_LOGS_EXPORTER=otlp
 OTEL_METRICS_EXPORTER=otlp
 OTEL_EXPORTER_OTLP_PROTOCOL=http/json
 OTEL_EXPORTER_OTLP_ENDPOINT=http://127.0.0.1:4318
-OTEL_LOGS_EXPORT_INTERVAL=2000
+OTEL_LOGS_EXPORT_INTERVAL=1000
 OTEL_LOG_TOOL_DETAILS=1
 # optional, beta: time-to-first-token and turn spans
 CLAUDE_CODE_ENHANCED_TELEMETRY_BETA=1
@@ -303,6 +304,18 @@ nav.addEventListener("click", (ev) => {
 });
 window.addEventListener("resize", () => last && render(last));
 
+// Pushed events trigger a refresh; batch bursts so the summary query runs at most twice a second.
+let pending: ReturnType<typeof setTimeout> | null = null;
+function loadSoon() {
+  if (pending) return;
+  pending = setTimeout(() => {
+    pending = null;
+    load();
+  }, 500);
+}
+
 markNav();
 load();
-setInterval(load, 10_000);
+startLive(document.getElementById("live")!, loadSoon);
+// Fallback for when the socket is down, and to roll the time window forward.
+setInterval(load, 30_000);
